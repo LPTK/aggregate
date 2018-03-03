@@ -67,41 +67,33 @@ trait Aggregator[-A, +To] { outer =>
 }
 object Aggregator {
   
-  //def sum[N](implicit N: scala.Numeric[N]): Aggregator[N,N] = new Aggregator[N,N] {
-  //  def wantsNext: Boolean = true
-  //  var a = N.zero
-  //  def next(x: N): Unit = a = N.plus(a,x)
-  //  def result = a
-  //}
-  case class sum[N:Numeric]() extends Aggregator[N,N] {
+  /** Canonical example. */
+  def sum[N](implicit N: scala.Numeric[N]): Aggregator[N,N] = new Aggregator[N,N] {
     def wantsNext: Boolean = true
-    var result = implicitly[Numeric[N]].zero
-    def next(a: N): Unit = result = implicitly[Numeric[N]].plus(result,a)
+    var result = N.zero
+    def next(a: N): Unit = result = N.plus(result,a)
   }
   
-  def count: Aggregator[Any,Int] = new Aggregator[Any,Int] {
-    def wantsNext: Boolean = true
-    var result = 0
-    def next(x: Any): Unit = result += 1
-  }
-  def current[A]: Aggregator[A,Option[A]] = new Aggregator[A,Option[A]] {
-    def wantsNext: Boolean = true
-    var result = Option.empty[A]
-    def next(x: A): Unit = result = Some(x)
-  }
-  def max[N](implicit N: scala.Numeric[N]): Aggregator[N,Option[N]] = new Aggregator[N,Option[N]] {
-    def wantsNext: Boolean = true
-    var a = Option.empty[N]
-    def next(x: N): Unit = a = Some(a.fold(x)(a => if (N.compare(x,a) > 0) x else a))
-    def result = a
-  }
-  
+  /** This can help define new aggregators. */
   def simpleInstance[A,R](z: R)(c: (R,A) => R): Aggregator[A,R] = new Aggregator[A,R] {
     def wantsNext: Boolean = true
     var cur = z
     def next(x: A): Unit = cur = c(cur,x)
     def result = cur
   }
+  
+  def count: Aggregator[Any,Int] =
+    simpleInstance[Any,Int](0)((c,a) => c + 1)
+  
+  def current[A]: Aggregator[A,Option[A]] =
+    simpleInstance[A,Option[A]](None)((c,a) => Some(a))
+  
+  def max[N](implicit N: scala.Numeric[N]): Aggregator[N,Option[N]] =
+    simpleInstance[N,Option[N]](None)((c,a) => Some(c.fold(a)(c => if (N.compare(a,c) > 0) a else c)))
+  
+  def toRevList[A] =
+    simpleInstance[A,List[A]](Nil)(_.::(_))
+  
   def statefulInstance[A,S,R](z: S)(c: (S,A) => Unit)(get: S => R): Aggregator[A,R] = new Aggregator[A,R] {
     def wantsNext: Boolean = true
     val cur = z
@@ -109,8 +101,10 @@ object Aggregator {
     def result = get(cur)
   }
   
-  def toRevList[A] = simpleInstance[A,List[A]](Nil)(_.::(_))
-  def toList[A] = statefulInstance[A,ListBuffer[A],List[A]](ListBuffer.empty)(_ += _)(_.toList)
-  def toBuffer[A] = simpleInstance[A,Buffer[A]](Buffer.empty)(_ += _)
+  def toList[A] =
+    statefulInstance[A,ListBuffer[A],List[A]](ListBuffer.empty)(_ += _)(_.toList)
+  
+  def toBuffer[A] =
+    simpleInstance[A,Buffer[A]](Buffer.empty)(_ += _)
   
 }
