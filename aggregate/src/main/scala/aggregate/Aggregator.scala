@@ -2,7 +2,8 @@ package aggregate
 
 import scala.annotation.compileTimeOnly
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.mutable.{ListBuffer, Buffer}
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{Buffer, ListBuffer}
 
 trait Aggregator[-A, +To] { outer =>
   def wantsNext(): Boolean
@@ -64,6 +65,14 @@ trait Aggregator[-A, +To] { outer =>
         ls <- toList[Double]
         if ls.size < 3  // value size is not a member of Double */
   
+  def doFilter[A0<:A](pred: A0 => Boolean) = new Aggregator[A0,To] {
+    def wantsNext: Boolean = outer.wantsNext()
+    //def next(x: A0): this.type = {if (pred(x)) outer next x; this}
+    def next(x: A0) = if (pred(x)) outer next x
+    //def clear() = outer.clear()
+    def result = outer.result
+  }
+  
 }
 object Aggregator {
   
@@ -106,5 +115,8 @@ object Aggregator {
   
   def toBuffer[A] =
     simpleInstance[A,Buffer[A]](Buffer.empty)(_ += _)
+  
+  def toArrayBuffer[A] =
+    simpleInstance[A,ArrayBuffer[A]](ArrayBuffer.empty)(_ += _)
   
 }
