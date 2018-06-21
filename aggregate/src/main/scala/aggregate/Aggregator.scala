@@ -65,6 +65,8 @@ trait Aggregator[-A, +To] { outer =>
         ls <- toList[Double]
         if ls.size < 3  // value size is not a member of Double */
   
+  
+  // TODO rm: already called `when`
   def doFilter[A0<:A](pred: A0 => Boolean) = new Aggregator[A0,To] {
     def wantsNext: Boolean = outer.wantsNext()
     //def next(x: A0): this.type = {if (pred(x)) outer next x; this}
@@ -72,6 +74,25 @@ trait Aggregator[-A, +To] { outer =>
     //def clear() = outer.clear()
     def result = outer.result
   }
+  def asLongAs(cond: => Boolean) = new Aggregator[A, To] {
+    var continue = true
+    def wantsNext() = continue && outer.wantsNext()
+    def result() = outer.result()
+    def next(x: A): Unit = if (cond) outer.next(x) else continue = false
+  }
+  
+  def pipe[R](that: Aggregator[To,R]): Aggregator[A, R] = new Aggregator[A, R] {
+    def result: R = that.result
+    def wantsNext: Boolean = outer.wantsNext && that.wantsNext
+    def next(x: A): Unit = { assert(wantsNext); outer next x; that next outer.result }
+  }
+  
+  
+  //def collect[R](f: To => R): Aggregator[A, R] = new Aggregator[A, R] {
+  //  //def result: R = f(outer.result)
+  //  //def wantsNext: Boolean = outer.wantsNext
+  //  //def next(x: A): Unit = { assert(wantsNext); outer next x }
+  //}
   
 }
 object Aggregator {
@@ -97,6 +118,13 @@ object Aggregator {
   def current[A]: Aggregator[A,Option[A]] =
     simpleInstance[A,Option[A]](None)((c,a) => Some(a))
   
+  //def thenNone[A]: Aggregator[A,Option[A]] = new Aggregator[A,Option[A]] {
+  //  def wantsNext: Boolean = true
+  //  var result: Option[A] = None
+  //  def next(a: A): Unit = result = Some(result,a)
+  //}
+  //def thenNone[A]: Aggregator[A,Option[A]] = statefulInstance[A,Iterator[A],Option[A]](None)
+  
   def max[N](implicit N: scala.Numeric[N]): Aggregator[N,Option[N]] =
     simpleInstance[N,Option[N]](None)((c,a) => Some(c.fold(a)(c => if (N.compare(a,c) > 0) a else c)))
   
@@ -118,5 +146,8 @@ object Aggregator {
   
   def toArrayBuffer[A] =
     simpleInstance[A,ArrayBuffer[A]](ArrayBuffer.empty)(_ += _)
+  
+  //def continually[A](a: A): Aggregator[Unit,A] =
+  //  simpleInstance[Unit,A](a)((_,_) => a)
   
 }
