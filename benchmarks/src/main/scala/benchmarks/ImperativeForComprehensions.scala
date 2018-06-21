@@ -28,15 +28,18 @@ class ImperativeForComprehensions {
   @Benchmark
   def simple_baseline() : Int = {
     var sum = 0
-    val xi = xs.iterator
-    while (xi.hasNext) {
-      val x = xi.next
-      val yi = ys.iterator
-      while (yi.hasNext) {
-        val y = yi.next
-        val zi = zs.iterator
-        while (zi.hasNext) {
-          val z = zi.next
+    var xs = this.xs
+    while (xs.nonEmpty) {
+      val x = xs.head
+      xs = xs.tail
+      var ys = this.ys
+      while (ys.nonEmpty) {
+        val y = ys.head
+        ys = ys.tail
+        var zs = this.zs
+        while (zs.nonEmpty) {
+          val z = zs.head
+          zs = zs.tail
           sum += x + y + z
         }
       }
@@ -69,13 +72,15 @@ class ImperativeForComprehensions {
   @Benchmark
   def one_binding_baseline() : Int = {
     var sum = 0
-    val xi = xs.iterator
-    while (xi.hasNext) {
-      val x = xi.next
+    var xs = this.xs
+    while (xs.nonEmpty) {
+      val x = xs.head
+      xs = xs.tail
       sum += x
-      val yi = ys.iterator
-      while (yi.hasNext) {
-        val y = yi.next
+      var ys = this.ys
+      while (ys.nonEmpty) {
+        val y = ys.head
+        ys = ys.tail
         sum += x + y
       }
     }
@@ -91,7 +96,7 @@ class ImperativeForComprehensions {
     } sum += x + y
     sum
   }
-  @Benchmark // this one seems faster than baseline! probably because it doesn't use an iterator
+  @Benchmark
   def one_binding_lazyfor() : Int = {
     var sum = 0
     xs.foreach { x =>
