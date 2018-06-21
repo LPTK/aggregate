@@ -2,7 +2,7 @@ package aggregate
 
 import utest._
 
-object BasicTests extends TestSuite{
+object BasicTests extends TestSuite {
   val tests = Tests {
     
     'iterators - {
