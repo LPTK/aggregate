@@ -7,7 +7,7 @@ import org.openjdk.jmh.annotations._
 //@BenchmarkMode(Array(Mode.AverageTime))
 //@State(Scope.Thread)
 //@Fork(1)
-class ForComprehensions {
+class ImperativeForComprehensions {
   
   @Param(Array("4", "16", "128")) // "4096" is pretty slow
   var size: Int = _
@@ -61,6 +61,43 @@ class ForComprehensions {
         zs.foreach { z =>
           sum += x + y + z
         }
+      }
+    }
+    sum
+  }
+  
+  @Benchmark
+  def one_binding_baseline() : Int = {
+    var sum = 0
+    val xi = xs.iterator
+    while (xi.hasNext) {
+      val x = xi.next
+      sum += x
+      val yi = ys.iterator
+      while (yi.hasNext) {
+        val y = yi.next
+        sum += x + y
+      }
+    }
+    sum
+  }
+  @Benchmark
+  def one_binding_for() : Int = {
+    var sum = 0
+    for {
+      x <- xs
+      () = sum += x
+      y <- ys
+    } sum += x + y
+    sum
+  }
+  @Benchmark // this one seems faster than baseline! probably because it doesn't use an iterator
+  def one_binding_lazyfor() : Int = {
+    var sum = 0
+    xs.foreach { x =>
+      val () = sum += x
+      ys.foreach { y =>
+          sum += x + y
       }
     }
     sum
