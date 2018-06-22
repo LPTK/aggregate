@@ -1,6 +1,6 @@
 # set output 'jmh-results.png'
 # set output 'jmh-results.svg'
-set output 'jmh-results.pdf'
+# set output 'jmh-results.pdf'
 # set terminal pdf
 # set terminal pdfcairo
 # set terminal pdfcairo size 300,300
