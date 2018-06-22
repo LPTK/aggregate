@@ -53,14 +53,16 @@ unset grid
 unset mytics
 
 # set ylabel "Normalized Execution Time" offset 2,0 # TODO?
-set ylabel "Operations per second" offset 2,0
-set yrange [0.5:*]
+# set ylabel "Operations per second" offset 2,0
+set ylabel "Speedup" offset 2,0
+# set yrange [0.5:*]
 
 set style fill solid noborder
 
-set logscale y
+# set logscale y
 plot \
 	'jmh-results-p.csv' using 2:3:xtic(1) title "baseline", \
+	1 title "", \
 	'jmh-results-p.csv' using 4:5:xtic(1) title "for", \
 	'jmh-results-p.csv' using 6:7:xtic(1) title "lazy for", \
 	'jmh-results-p.csv' using 8:9:xtic(1) title "lazy for, fused"

@@ -40,7 +40,7 @@ class benchmarks(val crossScalaVersion: String) extends CrossSbtModule with Jmh 
     
     val default = "0,0"
     
-    def mk(val_err:Option[(String,String)]) =
+    def mk(val_err:Option[(Double,Double)]) =
       val_err.fold(default)(val_err => s"${val_err._1},${val_err._2}")
     
     val csvLines = scala.io.Source.fromFile(csvPath.toString).getLines()
@@ -58,7 +58,19 @@ class benchmarks(val crossScalaVersion: String) extends CrossSbtModule with Jmh 
     }).toList.groupBy(_._1).mapValues(_.map(_._2).toMap)
     val lines = for ((name,gp) <- groups) yield {
       println(s"Entry: $name: $gp")
-      s"${name.replaceAll("_","-")},${mk(gp get "baseline")},${mk(gp get "for")},${mk(gp get "lazyfor")},${mk(gp get "lazyfused")}\n"
+      //s"${name.replaceAll("_","-")},${mk(gp get "baseline")},${mk(gp get "for")},${mk(gp get "lazyfor")},${mk(gp get "lazyfused")}\n"
+      val base = gp getOrElse ("for", sys.error("missing 'for' baseline"))
+      val baseScore = base._1.toDouble
+      val res = gp.mapValues{case (score,err) =>
+        val speedupRatio = score.toDouble/baseScore
+        (speedupRatio,err.toDouble/baseScore) // FIXME error computation
+      }
+      List(name.replaceAll("_","-"),
+        mk(res get "baseline"),
+        mk(res get "for"),
+        mk(res get "lazyfor"),
+        mk(res get "lazyfused")
+      ).mkString("",",","\n")
     }
     scala.tools.nsc.io.File(T.ctx.dest/processedCsvName toString).writeAll(lines.toList:_*)
     
