@@ -61,9 +61,20 @@ class benchmarks(val crossScalaVersion: String) extends CrossSbtModule with Jmh 
       //s"${name.replaceAll("_","-")},${mk(gp get "baseline")},${mk(gp get "for")},${mk(gp get "lazyfor")},${mk(gp get "lazyfused")}\n"
       val base = gp getOrElse ("for", sys.error("missing 'for' baseline"))
       val baseScore = base._1.toDouble
-      val res = gp.mapValues{case (score,err) =>
-        val speedupRatio = score.toDouble/baseScore
-        (speedupRatio,err.toDouble/baseScore) // FIXME error computation
+      val baseErr = base._2.toDouble
+      val res = gp.mapValues{case (scoreStr,errStr) =>
+        val score = scoreStr.toDouble
+        val scoreErr = errStr.toDouble
+        val speedupRatio = score/baseScore
+        //(speedupRatio,err.toDouble/baseScore) // wrong error computation
+        
+        // https://stats.stackexchange.com/a/21171
+        import Math.{pow,sqrt}
+        val covariance = 0.0 // ?!
+        val err = sqrt(
+          pow(speedupRatio,2)*(scoreErr/pow(score,2) + baseErr/pow(baseScore,2) - covariance))
+        
+        (speedupRatio,err)
       }
       List(name.replaceAll("_","-"),
         mk(res get "baseline"),
