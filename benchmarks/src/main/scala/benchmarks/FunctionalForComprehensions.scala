@@ -194,6 +194,50 @@ class FunctionalForComprehensions {
   }
   
   @Benchmark
+  def both_filters_for() : List[Int] = {
+    for {
+      x <- xs
+      if x > 0
+      y <- ys
+      if y < 0
+    } yield x + y
+  }
+  @Benchmark
+  def both_filters_lazyfor() : List[Int] = {
+    xs.map { x =>
+      if (x > 0) Some(
+        ys.map { y =>
+          if (y < 0) Some(x + y)
+          else None
+        }.flattenOptions
+      ) else None
+    }.flattenOptions.flatten
+  }
+  
+  @Benchmark
+  def many_filters_for() : List[Int] = {
+    for {
+      x <- xs
+      if x > 0
+      if x % 2 == 0
+      y <- ys
+      if y < 0
+      if y % 2 == 0
+    } yield x + y
+  }
+  @Benchmark
+  def many_filters_lazyfor() : List[Int] = {
+    xs.map { x =>
+      if (x > 0) if (x % 2 == 0) Some(
+        ys.map { y =>
+          if (y < 0) if (y % 2 == 0) Some(x + y)
+          else None else None
+        }.flattenOptions
+      ) else None else None
+    }.flattenOptions.flatten
+  }
+  
+  @Benchmark
   def binding_filtering_for() : List[Int] = {
     for {
       x <- xs

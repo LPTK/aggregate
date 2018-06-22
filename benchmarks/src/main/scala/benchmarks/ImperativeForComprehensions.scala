@@ -108,5 +108,47 @@ class ImperativeForComprehensions {
     sum
   }
   
+  @Benchmark
+  def two_bindings_baseline() : Int = {
+    var sum = 0
+    var xs = this.xs
+    while (xs.nonEmpty) {
+      val x = xs.head
+      xs = xs.tail
+      sum += x
+      var ys = this.ys
+      while (ys.nonEmpty) {
+        val y = ys.head
+        ys = ys.tail
+        sum += y
+        sum += x + y
+      }
+    }
+    sum
+  }
+  @Benchmark
+  def two_bindings_for() : Int = {
+    var sum = 0
+    for {
+      x <- xs
+      () = sum += x
+      y <- ys
+      () = sum += y
+    } sum += x + y
+    sum
+  }
+  @Benchmark
+  def two_bindings_lazyfor() : Int = {
+    var sum = 0
+    xs.foreach { x =>
+      val () = sum += x
+      ys.foreach { y =>
+          val () = sum += y
+          sum += x + y
+      }
+    }
+    sum
+  }
+  
   
 }
