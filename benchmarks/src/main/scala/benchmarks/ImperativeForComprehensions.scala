@@ -9,7 +9,7 @@ import org.openjdk.jmh.annotations._
 //@Fork(1)
 class ImperativeForComprehensions {
   
-  @Param(Array("4", "16", "128")) // "4096" is pretty slow
+  @Param(Array("4", "16", "64", "256")) // "4096" is pretty slow
   var size: Int = _
   
   var xs: List[Int] = _

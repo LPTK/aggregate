@@ -8,7 +8,7 @@ import scala.collection.mutable
 @State(Scope.Benchmark)
 class FunctionalForComprehensions {
   
-  @Param(Array("4", "16", "128"))
+  @Param(Array("4", "16", "64", "256"))
   var size: Int = _
   
   var xs: List[Int] = _
@@ -167,7 +167,31 @@ class FunctionalForComprehensions {
       ) else None
     }.flattenOptions.flatten
   }
+  @Benchmark
+  def first_filter_lazymixed() : List[Int] = {
+    xs.withFilter(x => x > 0).map { x =>
+      ys.map { y =>
+        x + y
+      }
+    }.flatten
+  }
   
+  @Benchmark
+  def second_filter_baseline() : List[Int] = {
+    val res = new mutable.ListBuffer[Int]
+    var xs = this.xs
+    while (xs.nonEmpty) {
+      val x = xs.head
+      xs = xs.tail
+      var ys = this.ys
+      while (ys.nonEmpty) {
+        val y = ys.head
+        ys = ys.tail
+        if (x > 0) res += x + y
+      }
+    }
+    res.result()
+  }
   @Benchmark
   def second_filter_for() : List[Int] = {
     for {
@@ -185,12 +209,36 @@ class FunctionalForComprehensions {
     }.flatten
   }
   @Benchmark
-  def second_filter_lazyfused() : List[Int] = {
+  def second_filter_lazymixed() : List[Int] = {
     xs.flatMap { x =>
-      ys.map { y =>
-        if (x > 0) Some(x + y) else None
-      }.flattenOptions
+      ys.withFilter(_ => x > 0).map { y =>
+        x + y
+      }
     }
+  }
+  @Benchmark
+  def second_filter_lazyunboxed() : List[Int] = {
+    xs.map { x =>
+      ys.map { y =>
+        if (x > 0) USome(x + y) else (UNone:UOption[Int])
+      }.flattenOptions
+    }.flatten
+  }
+  @Benchmark
+  def second_filter_monadicfor() : List[Int] = {
+    xs.flatMap { x =>
+      ys.flatMap { y =>
+        if (x > 0) (x + y)::Nil else Nil // TODO generalize
+      }
+    }
+  }
+  @Benchmark
+  def second_filter_liftedfor() : List[Int] = {
+    for {
+      x <- xs
+      y <- ys
+      () <- (())::Nil filter (_ => x > 0)
+    } yield x + y
   }
   
   @Benchmark
@@ -212,6 +260,14 @@ class FunctionalForComprehensions {
         }.flattenOptions
       ) else None
     }.flattenOptions.flatten
+  }
+  @Benchmark
+  def both_filters_lazymixed() : List[Int] = {
+    xs.withFilter(x => x > 0).map { x =>
+      ys.withFilter(y => y < 0).map { y =>
+        x + y
+      }
+    }.flatten
   }
   
   @Benchmark
@@ -235,6 +291,45 @@ class FunctionalForComprehensions {
         }.flattenOptions
       ) else None else None
     }.flattenOptions.flatten
+  }
+  
+  @Benchmark
+  def many_filters_binding_for() : List[Int] = {
+    for {
+      x <- xs
+      if x > 0
+      if x % 2 == 0
+      y <- ys
+      if y < 0
+      if y % 2 == 0
+      z = x + y
+      if z < Int.MaxValue
+    } yield z
+  }
+  @Benchmark
+  def many_filters_binding_lazyfor() : List[Int] = {
+    xs.map { x =>
+      if (x > 0) if (x % 2 == 0) Some(
+        ys.map { y =>
+          if (y < 0) if (y % 2 == 0) {
+            val z = x + y
+            if (z < Int.MaxValue) Some(z)
+            else None
+          }
+          else None else None
+        }.flattenOptions
+      ) else None else None
+    }.flattenOptions.flatten
+  }
+  @Benchmark
+  def many_filters_binding_lazymixed() : List[Int] = {
+    xs.withFilter(x => x > 0).withFilter(x => x % 2 == 0).map { x =>
+      ys.withFilter(y => y < 0).withFilter(y => y % 2 == 0).map { y =>
+        val z = x + y
+        if (z < Int.MaxValue) Some(z)
+        else None
+      }.flattenOptions
+    }.flatten
   }
   
   @Benchmark
@@ -290,12 +385,14 @@ class FunctionalForComprehensions {
           ys = ys.tail
           if (y < x0) {
             val y0 = y + 1
-            var zs = this.zs
-            while (zs.nonEmpty) {
-              val z = zs.head
-              zs = zs.tail
-              res += x + y + z
-            }
+            res += x0 + y0
+            // TODO one more generator?
+            //var zs = this.zs
+            //while (zs.nonEmpty) {
+            //  val z = zs.head
+            //  zs = zs.tail
+            //  res += x + y + z
+            //}
           }
         }
       }

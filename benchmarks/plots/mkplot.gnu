@@ -65,6 +65,10 @@ plot \
 	1 title "", \
 	'jmh-results-p.csv' using 4:5:xtic(1) title "for", \
 	'jmh-results-p.csv' using 6:7:xtic(1) title "lazy for", \
-	'jmh-results-p.csv' using 8:9:xtic(1) title "lazy for, fused"
+	'jmh-results-p.csv' using 8:9:xtic(1) title "lazy for, fused", \
+	'jmh-results-p.csv' using 10:11:xtic(1) title "lazy for, mixed", \
+	'jmh-results-p.csv' using 12:13:xtic(1) title "lazy for, unboxed", \
+	'jmh-results-p.csv' using 14:15:xtic(1) title "monadic for", \
+	'jmh-results-p.csv' using 16:17:xtic(1) title "lifted for"
 
 
