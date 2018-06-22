@@ -79,14 +79,7 @@ class benchmarks(val crossScalaVersion: String) extends CrossSbtModule with Jmh 
         val score = scoreStr.toDouble
         val scoreErr = errStr.toDouble
         val speedupRatio = score/baseScore
-        //(speedupRatio,err.toDouble/baseScore) // wrong error computation
-        
-        // https://stats.stackexchange.com/a/21171
-        import Math.{pow,sqrt}
-        val covariance = 0.0 // ?!
-        val err = sqrt(
-          pow(speedupRatio,2)*(scoreErr/pow(score,2) + baseErr/pow(baseScore,2) - covariance))
-        
+        val err = scoreErr/score * speedupRatio
         (speedupRatio,err)
       }
       List(name.replaceAll("_","-"),
